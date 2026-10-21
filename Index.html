@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Global Football Scouting 3D Suite | Premier Executive B.I.</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#030712',
+              card: 'rgba(15, 23, 42, 0.75)',
+              gold: '#f59e0b',
+              accent: '#06b6d4',
+              neon: '#10b981'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+    
+    /* Glassmorphism styling */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(6, 182, 212, 0.4);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(6, 182, 212, 0.8);
+    }
+
+    /* Range slider custom styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #06b6d4;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+      margin-top: -6px;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
+      cursor: pointer;
+      background: #334155;
+      border-radius: 2px;
+    }
+
+    /* Pulse animation for markers */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.15); }
+    }
+    .glow-effect {
+      animation: pulse-glow 3s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col select-none">
+
+  <!-- Header Nav Bar -->
+  <header class="h-16 border-b border-slate-800/80 glass-panel z-20 flex items-center justify-between px-6 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-emerald-500 to-amber-400 p-[2px] flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+          <i class="fa-solid font-bold fa-globe text-cyan-400 text-lg"></i>
+        </div>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-base tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-200 to-amber-300">
+          PREMIER EXECUTIVE SCOUTING SUITE
+        </h1>
+        <p class="text-[11px] text-slate-400 font-medium tracking-wider uppercase">
+          3D Global Scouting & Financial ROI Intelligence
+        </p>
+      </div>
+    </div>
+
+    <!-- Active Scouting Target Summary -->
+    <div class="hidden lg:flex items-center space-x-6 text-xs">
+      <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="text-slate-400">Territorio Activo:</span>
+        <span id="active-territory-badge" class="font-bold text-cyan-300">Todos los Territorios</span>
+      </div>
+      <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg">
+        <i class="fa-solid fa-users text-amber-400"></i>
+        <span class="text-slate-400">Talentos Filtrados:</span>
+        <span id="player-count-badge" class="font-bold text-amber-400">12 Jugadores</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center space-x-3">
+      <button id="reset-globe-btn" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all duration-200 border border-slate-700 flex items-center space-x-1.5">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span>Reiniciar Cámara</span>
+      </button>
+      <button id="sync-looker-btn" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 transition-all duration-200 shadow-md shadow-amber-500/20 flex items-center space-x-2">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>Exportar Filtros a Looker Studio</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="flex-1 relative w-full h-[calc(100vh-4rem)] overflow-hidden">
+    
+    <!-- 3D Canvas Canvas Element -->
+    <div id="canvas-container" class="absolute inset-0 z-0 cursor-grab active:cursor-grabbing"></div>
+
+    <!-- Left Floating Controls Panel: Filter Suite -->
+    <div class="absolute top-4 left-4 z-10 w-80 max-h-[calc(100vh-6rem)] flex flex-col space-y-4 pointer-events-auto">
+      <div class="glass-panel rounded-2xl p-4 shadow-2xl flex flex-col space-y-4 border border-slate-800">
+        
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div class="flex items-center space-x-2 text-cyan-400">
+            <i class="fa-solid fa-sliders text-sm"></i>
+            <h2 class="text-xs font-bold tracking-wider uppercase">Filtros Ejecutivos</h2>
+          </div>
+          <button id="clear-filters-btn" class="text-[11px] text-slate-400 hover:text-cyan-400 transition-colors">
+            Limpiar todo
+          </button>
+        </div>
+
+        <!-- Filter: League / Target Hub -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
+            <span>Liga Destino</span>
+            <i class="fa-solid fa-trophy text-[10px] text-amber-400"></i>
+          </label>
+          <select id="filter-league" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-cyan-500 transition-colors">
+            <option value="ALL">Todas las Ligas (Global)</option>
+            <option value="Premier League" selected>Premier League (Inglaterra)</option>
+            <option value="La Liga">La Liga (España)</option>
+            <option value="Serie A">Serie A (Italia)</option>
+            <option value="Liga Profesional">LPF (Argentina)</option>
+          </select>
+        </div>
+
+        <!-- Filter: Specific Position -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
+            <span>Posición Táctica</span>
+            <i class="fa-solid fa-child-reaching text-[10px] text-cyan-400"></i>
+          </label>
+          <select id="filter-position" class="w-full bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-cyan-500 transition-colors">
+            <option value="ALL">Todas las Posiciones</option>
+            <option value="MCO">MCO - Mediocampista Ofensivo</option>
+            <option value="MC">MC - Mediocampista Central</option>
+            <option value="MCD">MCD - Pivot Defensivo</option>
+          </select>
+        </div>
+
+        <!-- Filter Slider: Max Market Value -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-[11px]">
+            <span class="font-semibold text-slate-300">Valor de Mercado Máx.</span>
+            <span id="value-slider-label" class="font-bold text-amber-400">€ 125M</span>
+          </div>
+          <input type="range" id="filter-value" min="10000000" max="150000000" step="5000000" value="125000000" class="w-full">
+        </div>
+
+        <!-- Filter Slider: Max Age -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center text-[11px]">
+            <span class="font-semibold text-slate-300">Edad Máxima</span>
+            <span id="age-slider-label" class="font-bold text-cyan-400">35 años</span>
+          </div>
+          <input type="range" id="filter-age" min="18" max="36" step="1" value="35" class="w-full">
+        </div>
+
+        <!-- Quick Globe Controls / Rotation toggle -->
+        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+          <span class="text-slate-400 text-[11px]">Rotación Automática</span>
+          <button id="toggle-rotation-btn" class="px-2.5 py-1 rounded bg-slate-800 text-cyan-400 border border-slate-700 hover:bg-slate-700 text-[11px] transition-colors">
+            <i class="fa-solid fa-pause mr-1"></i> Pausar
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Quick Country Selection Chips -->
+      <div class="glass-panel rounded-2xl p-3 shadow-xl border border-slate-800 space-y-2">
+        <h3 class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Hubs Geográficos Clave</h3>
+        <div class="flex flex-wrap gap-1.5" id="country-chips-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Floating Panel: Player Scouting Table / Results -->
+    <div class="absolute top-4 right-4 z-10 w-96 max-h-[calc(100vh-6rem)] flex flex-col space-y-3 pointer-events-auto">
+      
+      <div class="glass-panel rounded-2xl p-4 shadow-2xl flex flex-col max-h-[78vh] border border-slate-800">
+        
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-xs font-bold text-slate-200 tracking-wider uppercase flex items-center space-x-2">
+              <span id="territory-flag" class="text-base">🌐</span>
+              <span id="selected-country-title">Talentos Detectados</span>
+            </h2>
+            <p class="text-[10px] text-slate-400" id="territory-subtitle">Selecciona un país en el globo o en la lista</p>
+          </div>
+          <span id="results-counter" class="text-[11px] font-extrabold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/50">
+            12 Jugadores
+          </span>
+        </div>
+
+        <!-- Player Cards List -->
+        <div id="player-list-container" class="overflow-y-auto space-y-2 my-3 pr-1 flex-1">
+          <!-- Populated dynamically via JavaScript -->
+        </div>
+
+        <div class="pt-2 border-t border-slate-800/80 text-[10px] text-slate-400 text-center">
+          <i class="fa-solid fa-mouse-pointer text-cyan-400 mr-1"></i>
+          Haz clic en cualquier jugador para abrir su **Ficha de Impacto ROI**
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Drawer: Detailed Player Scouting Profile Modal/Drawer -->
+    <div id="player-modal" class="hidden absolute inset-0 z-30 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+      <div class="glass-panel w-full max-w-2xl rounded-3xl border border-slate-700/80 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <!-- Modal Header -->
+        <div class="p-5 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-slate-900/80 to-slate-950 flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-amber-400 p-[2px] shadow-lg shadow-cyan-500/20">
+              <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center font-extrabold text-lg text-slate-100" id="modal-player-avatar">
+                KDB
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 id="modal-player-name" class="text-lg font-black text-slate-100">Kevin De Bruyne</h3>
+                <span id="modal-player-flag" class="text-lg">🇧🇪</span>
+              </div>
+              <p class="text-xs text-slate-400" id="modal-player-meta">Manchester City • Mediocampista (MCO) • 33 años</p>
+            </div>
+          </div>
+          <button id="close-modal-btn" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-100 flex items-center justify-center transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Modal Body Content -->
+        <div class="p-6 overflow-y-auto space-y-6 text-xs">
+          
+          <!-- Key Financial Executive Cards -->
+          <div class="grid grid-cols-3 gap-3">
+            <div class="glass-card p-3 rounded-xl border border-slate-800/80">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold block">Valor de Mercado</span>
+              <span id="modal-market-value" class="text-base font-extrabold text-amber-400">€ 25.000.000</span>
+            </div>
+            <div class="glass-card p-3 rounded-xl border border-slate-800/80">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold block">Costo Por Impacto ROI</span>
+              <span id="modal-cost-impact" class="text-base font-extrabold text-emerald-400">€ 89,3M</span>
+            </div>
+            <div class="glass-card p-3 rounded-xl border border-slate-800/80">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold block">Minutos Jugados</span>
+              <span id="modal-minutes" class="text-base font-extrabold text-cyan-400">1.500 min</span>
+            </div>
+          </div>
+
+          <!-- Tactical Performance Breakdown Bars -->
+          <div class="space-y-3 glass-card p-4 rounded-2xl border border-slate-800">
+            <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Métricas Tácticas por 90 Minutos</span>
+              <span class="text-[10px] text-slate-400 font-normal">Temporada 2026</span>
+            </h4>
+
+            <!-- Metric 1 -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-300">Pases Progresivos (p90)</span>
+                <span id="modal-val-pases" class="font-bold text-slate-100">8.9</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="modal-bar-pases" class="bg-gradient-to-r from-cyan-500 to-teal-400 h-full rounded-full" style="width: 89%;"></div>
+              </div>
+            </div>
+
+            <!-- Metric 2 -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-300">Acciones de Creación de Tiro (p90)</span>
+                <span id="modal-val-acciones" class="font-bold text-slate-100">5.8</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="modal-bar-acciones" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full" style="width: 92%;"></div>
+              </div>
+            </div>
+
+            <!-- Metric 3 -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-300">Conducciones Progresivas (Ball Carrying Impact p90)</span>
+                <span id="modal-val-conducciones" class="font-bold text-slate-100">4.2</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="modal-bar-conducciones" class="bg-gradient-to-r from-emerald-500 to-teal-300 h-full rounded-full" style="width: 70%;"></div>
+              </div>
+            </div>
+
+            <!-- Metric 4 -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-300">Goles Esperados + Asistencias (xG+xA p90)</span>
+                <span id="modal-val-xg" class="font-bold text-slate-100">0.56</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div id="modal-bar-xg" class="bg-gradient-to-r from-purple-500 to-indigo-400 h-full rounded-full" style="width: 80%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Executive Conclusion Box -->
+          <div class="bg-slate-900/90 p-3.5 rounded-xl border border-cyan-500/20 text-slate-300 text-[11px] leading-relaxed flex items-start space-x-2.5">
+            <i class="fa-solid fa-lightbulb text-amber-400 text-sm mt-0.5"></i>
+            <div>
+              <strong class="text-slate-100 block mb-0.5">Dictamen de Scouting Financiero:</strong>
+              <span id="modal-verdict-text">
+                Perfil de altísimo impacto creativo en zona de tres cuartos. Su costo por acción generada lo posiciona como un activo de alta eficiencia táctica a pesar de su rango de edad.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
+          <span class="text-[10px] text-slate-500">ID Ficha: PL-2026-SCOUT</span>
+          <div class="flex space-x-2">
+            <button id="send-single-looker-btn" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs transition-colors flex items-center space-x-2">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Enviar Filtro a Looker Studio</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Notification Toast Message Container -->
+    <div id="toast-message" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 glass-panel px-6 py-3 rounded-2xl border border-cyan-500/40 shadow-2xl shadow-cyan-500/20 flex items-center space-x-3 transition-all duration-300">
+      <div class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div>
+        <h4 id="toast-title" class="text-xs font-bold text-slate-100">Sincronización Exitosa</h4>
+        <p id="toast-desc" class="text-[11px] text-slate-300">Filtro enviado a Looker Studio.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // ==========================================
+    // 1. DATASETS: PLAYERS & COUNTRY HUBS
+    // ==========================================
+    
+    const COUNTRY_HUBS = {
+      'Argentina': { lat: -34.6037, lng: -58.3816, flag: '🇦🇷', name: 'Argentina' },
+      'Brasil': { lat: -14.2350, lng: -51.9253, flag: '🇧🇷', name: 'Brasil' },
+      'Inglaterra': { lat: 52.3555, lng: -1.1743, flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'Inglaterra' },
+      'Bélgica': { lat: 50.5039, lng: 4.4699, flag: '🇧🇪', name: 'Bélgica' },
+      'Noruega': { lat: 60.4720, lng: 8.4689, flag: '🇳🇴', name: 'Noruega' },
+      'Ecuador': { lat: -1.8312, lng: -78.1834, flag: '🇪🇨', name: 'Ecuador' },
+      'Hungría': { lat: 47.1625, lng: 19.5033, flag: '🇭🇺', name: 'Hungría' },
+      'Uruguay': { lat: -32.5228, lng: -55.7658, flag: '🇺🇾', name: 'Uruguay' },
+      'Francia': { lat: 46.2276, lng: 2.2137, flag: '🇫🇷', name: 'Francia' },
+      'España': { lat: 40.4637, lng: -3.7492, flag: '🇪🇸', name: 'España' },
+      'Portugal': { lat: 39.3999, lng: -8.2245, flag: '🇵🇹', name: 'Portugal' }
+    };
+
+    const PLAYERS_DATABASE = [
+      { id: 1, name: 'Kevin De Bruyne', team: 'Manchester City', league: 'Premier League', pos: 'MCO', age: 33, country: 'Bélgica', value: 25000000, costImpact: 89285714, pasesProg: 8.9, accionesTiro: 5.8, conducciones: 4.2, xg: 0.56, minutes: 1500 },
+      { id: 2, name: 'Martin Ødegaard', team: 'Arsenal', league: 'Premier League', pos: 'MCO', age: 27, country: 'Noruega', value: 115000000, costImpact: 320000000, pasesProg: 8.8, accionesTiro: 5.6, conducciones: 4.8, xg: 0.48, minutes: 2100 },
+      { id: 3, name: 'James Maddison', team: 'Tottenham', league: 'Premier League', pos: 'MCO', age: 29, country: 'Inglaterra', value: 60000000, costImpact: 190000000, pasesProg: 7.9, accionesTiro: 5.2, conducciones: 3.9, xg: 0.42, minutes: 1850 },
+      { id: 4, name: 'Enzo Fernández', team: 'Chelsea', league: 'Premier League', pos: 'MC', age: 25, country: 'Argentina', value: 80000000, costImpact: 240000000, pasesProg: 7.8, accionesTiro: 4.2, conducciones: 3.1, xg: 0.30, minutes: 2300 },
+      { id: 5, name: 'Alexis Mac Allister', team: 'Liverpool', league: 'Premier League', pos: 'MC', age: 27, country: 'Argentina', value: 65000000, costImpact: 210000000, pasesProg: 7.1, accionesTiro: 4.1, conducciones: 2.8, xg: 0.35, minutes: 2200 },
+      { id: 6, name: 'Bruno Guimarães', team: 'Newcastle', league: 'Premier League', pos: 'MC', age: 28, country: 'Brasil', value: 85000000, costImpact: 280000000, pasesProg: 6.9, accionesTiro: 3.8, conducciones: 3.5, xg: 0.28, minutes: 2400 },
+      { id: 7, name: 'Dominik Szoboszlai', team: 'Liverpool', league: 'Premier League', pos: 'MCO', age: 25, country: 'Hungría', value: 75000000, costImpact: 230000000, pasesProg: 7.4, accionesTiro: 4.6, conducciones: 4.1, xg: 0.40, minutes: 1950 },
+      { id: 8, name: 'Moisés Caicedo', team: 'Chelsea', league: 'Premier League', pos: 'MCD', age: 24, country: 'Ecuador', value: 90000000, costImpact: 350000000, pasesProg: 5.8, accionesTiro: 2.9, conducciones: 2.4, xg: 0.18, minutes: 2250 },
+      { id: 9, name: 'Lucas Paquetá', team: 'West Ham', league: 'Premier League', pos: 'MCO', age: 28, country: 'Brasil', value: 65000000, costImpact: 200000000, pasesProg: 6.8, accionesTiro: 4.3, conducciones: 3.7, xg: 0.38, minutes: 1800 },
+      { id: 10, name: 'Kobbie Mainoo', team: 'Manchester United', league: 'Premier League', pos: 'MC', age: 20, country: 'Inglaterra', value: 55000000, costImpact: 175000000, pasesProg: 6.2, accionesTiro: 3.4, conducciones: 3.9, xg: 0.22, minutes: 1600 },
+      { id: 11, name: 'Rodrigo De Paul', team: 'Atlético Madrid', league: 'La Liga', pos: 'MC', age: 31, country: 'Argentina', value: 30000000, costImpact: 110000000, pasesProg: 7.2, accionesTiro: 3.9, conducciones: 3.2, xg: 0.29, minutes: 1900 },
+      { id: 12, name: 'Federico Valverde', team: 'Real Madrid', league: 'La Liga', pos: 'MC', age: 27, country: 'Uruguay', value: 120000000, costImpact: 380000000, pasesProg: 7.5, accionesTiro: 4.4, conducciones: 5.1, xg: 0.45, minutes: 2500 }
+    ];
+
+    // Target Scouting Hubs (e.g. Premier League, La Liga centers)
+    const DESTINATION_HUBS = {
+      'Premier League': { lat: 52.3555, lng: -1.1743, label: 'Londres / Premier Hub' },
+      'La Liga': { lat: 40.4637, lng: -3.7492, label: 'Madrid Hub' },
+      'Serie A': { lat: 41.9028, lng: 12.4964, label: 'Roma Hub' },
+      'Liga Profesional': { lat: -34.6037, lng: -58.3816, label: 'Buenos Aires Hub' }
+    };
+
+    // Global App State
+    let state = {
+      selectedCountry: 'ALL',
+      selectedLeague: 'Premier League',
+      selectedPosition: 'ALL',
+      maxValue: 125000000,
+      maxAge: 35,
+      autoRotate: true
+    };
+
+    // Three.js Core Variables
+    let scene, camera, renderer, controls;
+    let globeMesh, atmosphereMesh;
+    let markersGroup, arcsGroup;
+    let raycaster, mouse;
+    let countryMarkerMeshes = [];
+
+    // ==========================================
+    // 2. THREE.JS 3D GLOBE INITIALIZATION
+    // ==========================================
+    
+    function init3DGlobe() {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Scene setup
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x030712, 0.0015);
+
+      // Camera setup
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 0, 240);
+
+      // Renderer setup
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      container.appendChild(renderer.domElement);
+
+      // Orbit Controls setup
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.rotateSpeed = 0.8;
+      controls.zoomSpeed = 1.2;
+      controls.minDistance = 140;
+      controls.maxDistance = 380;
+      controls.autoRotate = state.autoRotate;
+      controls.autoRotateSpeed = 0.6;
+
+      // Raycaster for click interaction on Globe
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0x06b6d4, 1.5);
+      dirLight1.position.set(200, 100, 200);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0xf59e0b, 0.8);
+      dirLight2.position.set(-200, -100, -200);
+      scene.add(dirLight2);
+
+      // Groups
+      markersGroup = new THREE.Group();
+      arcsGroup = new THREE.Group();
+
+      // Create Globe Sphere
+      createGlobeSphere();
+
+      // Create Starfield Background
+      createStarfield();
+
+      // Render Scouting Markers & Connections
+      updateGlobeVisuals();
+
+      // Add resize event
+      window.addEventListener('resize', onWindowResize);
+
+      // Click event listener
+      renderer.domElement.addEventListener('click', onGlobeClick);
+
+      // Start Animation Loop
+      animate();
+    }
+
+    function createGlobeSphere() {
+      const radius = 60;
+      const segments = 64;
+
+      // Base sphere geometry
+      const geometry = new THREE.SphereGeometry(radius, segments, segments);
+
+      // Create procedural wireframe/grid canvas texture for sleek dark SaaS aesthetic
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      // Background fill
+      ctx.fillStyle = '#0b1329';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Grid lines
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+
+      // Latitude lines
+      for (let i = 0; i <= canvas.height; i += 32) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+      // Longitude lines
+      for (let i = 0; i <= canvas.width; i += 32) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+      }
+
+      // Add continents stylized points
+      ctx.fillStyle = '#06b6d4';
+      for (let i = 0; i < 2500; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+
+      const material = new THREE.MeshPhongMaterial({
+        map: texture,
+        shininess: 25,
+        bumpScale: 0.05,
+        wireframe: false,
+        color: 0x0f172a
+      });
+
+      globeMesh = new THREE.Mesh(geometry, material);
+      scene.add(globeMesh);
+
+      // Outer Atmosphere Glow Shader/Mesh
+      const atmosGeometry = new THREE.SphereGeometry(radius + 1.8, segments, segments);
+      const atmosMaterial = new THREE.MeshBasicMaterial({
+        color: 0x06b6d4,
+        transparent: true,
+        opacity: 0.12,
+        side: THREE.BackSide
+      });
+      atmosphereMesh = new THREE.Mesh(atmosGeometry, atmosMaterial);
+      scene.add(atmosphereMesh);
+
+      // Add Groups to globe mesh so they rotate together
+      globeMesh.add(markersGroup);
+      globeMesh.add(arcsGroup);
+    }
+
+    function createStarfield() {
+      const starsGeometry = new THREE.BufferGeometry();
+      const starsCount = 1200;
+      const starPositions = new Float32Array(starsCount * 3);
+
+      for (let i = 0; i < starsCount * 3; i++) {
+        starPositions[i] = (Math.random() - 0.5) * 800;
+      }
+
+      starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+      const starsMaterial = new THREE.PointsMaterial({
+        color: 0x64748b,
+        size: 0.8,
+        transparent: true,
+        opacity: 0.6
+      });
+
+      const starField = new THREE.Points(starsGeometry, starsMaterial);
+      scene.add(starField);
+    }
+
+    // Helper: Latitude & Longitude to 3D Coordinates
+    function latLngToVector3(lat, lng, radius) {
+      const phi = (90 - lat) * (Math.PI / 180);
+      const theta = (lng + 180) * (Math.PI / 180);
+
+      const x = -(radius * Math.sin(phi) * Math.cos(theta));
+      const z = radius * Math.sin(phi) * Math.sin(theta);
+      const y = radius * Math.cos(phi);
+
+      return new THREE.Vector3(x, y, z);
+    }
+
+    // Update Markers & Connecting Arcs
+    function updateGlobeVisuals() {
+      // Clear old meshes
+      while (markersGroup.children.length > 0) {
+        markersGroup.remove(markersGroup.children[0]);
+      }
+      while (arcsGroup.children.length > 0) {
+        arcsGroup.remove(arcsGroup.children[0]);
+      }
+      countryMarkerMeshes = [];
+
+      const filteredPlayers = getFilteredPlayers();
+
+      // Collect active countries with players matching current filters
+      const activeCountries = new Set(filteredPlayers.map(p => p.country));
+
+      const hubTarget = DESTINATION_HUBS[state.selectedLeague] || DESTINATION_HUBS['Premier League'];
+      const targetVec = latLngToVector3(hubTarget.lat, hubTarget.lng, 60);
+
+      // Render Destination Hub Pin (e.g. England Premier League)
+      const hubPinGeo = new THREE.ConeGeometry(1.5, 5, 8);
+      const hubPinMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+      const hubMesh = new THREE.Mesh(hubPinGeo, hubPinMat);
+      hubMesh.position.copy(targetVec);
+      hubMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), targetVec.clone().normalize());
+      markersGroup.add(hubMesh);
+
+      // Render Country Markers and Connecting Arcs
+      Object.keys(COUNTRY_HUBS).forEach(countryKey => {
+        const hub = COUNTRY_HUBS[countryKey];
+        const isSelected = (state.selectedCountry === countryKey);
+        const hasPlayers = activeCountries.has(countryKey);
+
+        const posVec = latLngToVector3(hub.lat, hub.lng, 60.5);
+
+        // Marker Sphere
+        const markerSize = isSelected ? 2.2 : (hasPlayers ? 1.4 : 0.8);
+        const markerColor = isSelected ? 0x10b981 : (hasPlayers ? 0x06b6d4 : 0x475569);
+
+        const markerGeo = new THREE.SphereGeometry(markerSize, 16, 16);
+        const markerMat = new THREE.MeshStandardMaterial({
+          color: markerColor,
+          emissive: markerColor,
+          emissiveIntensity: isSelected ? 0.9 : 0.4,
+          roughness: 0.2
+        });
+
+        const markerMesh = new THREE.Mesh(markerGeo, markerMat);
+        markerMesh.position.copy(posVec);
+        markerMesh.userData = { country: countryKey };
+        markersGroup.add(markerMesh);
+        countryMarkerMeshes.push(markerMesh);
+
+        // Create 3D Arc Connection Line if country has matching players
+        if (hasPlayers && countryKey !== 'Inglaterra') {
+          const arcMesh = create3DArc(posVec, targetVec, isSelected ? 0xf59e0b : 0x06b6d4);
+          arcsGroup.add(arcMesh);
+        }
+      });
+
+      // Update Header Badges
+      document.getElementById('player-count-badge').innerText = `${filteredPlayers.length} Jugadores`;
+      document.getElementById('active-territory-badge').innerText = state.selectedCountry === 'ALL' ? 'Todos los Territorios' : state.selectedCountry;
+    }
+
+    // Helper: Create Curved 3D Arc between two vectors on sphere
+    function create3DArc(vecA, vecB, colorHex) {
+      const distance = vecA.distanceTo(vecB);
+      const mid = vecA.clone().add(vecB).multiplyScalar(0.5);
+      const midLength = mid.length();
+
+      // Raise mid point for curved arc flight path
+      mid.normalize().multiplyScalar(60 + distance * 0.28);
+
+      const curve = new THREE.QuadraticBezierCurve3(vecA, mid, vecB);
+      const points = curve.getPoints(40);
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+      const material = new THREE.LineBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: colorHex === 0xf59e0b ? 0.9 : 0.5,
+        linewidth: 2
+      });
+
+      return new THREE.Line(geometry, material);
+    }
+
+    // Raycast Interaction: Click on Globe Marker
+    function onGlobeClick(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(countryMarkerMeshes);
+
+      if (intersects.length > 0) {
+        const clickedCountry = intersects[0].object.userData.country;
+        selectCountry(clickedCountry);
+      }
+    }
+
+    function selectCountry(countryName) {
+      state.selectedCountry = countryName;
+      updateGlobeVisuals();
+      renderPlayerList();
+      renderCountryChips();
+
+      // Rotate globe smooth camera focus toward country
+      if (COUNTRY_HUBS[countryName]) {
+        const hub = COUNTRY_HUBS[countryName];
+        const targetPos = latLngToVector3(hub.lat, hub.lng, 220);
+
+        // Gentle camera transition
+        camera.position.lerp(targetPos, 0.6);
+      }
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Rotate atmosphere slightly
+      if (atmosphereMesh) {
+        atmosphereMesh.rotation.y += 0.0003;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // ==========================================
+    // 3. UI RENDERING & FILTERING LOGIC
+    // ==========================================
+
+    function getFilteredPlayers() {
+      return PLAYERS_DATABASE.filter(player => {
+        const matchCountry = (state.selectedCountry === 'ALL' || player.country === state.selectedCountry);
+        const matchLeague = (state.selectedLeague === 'ALL' || player.league === state.selectedLeague);
+        const matchPos = (state.selectedPosition === 'ALL' || player.pos === state.selectedPosition);
+        const matchValue = player.value <= state.maxValue;
+        const matchAge = player.age <= state.maxAge;
+
+        return matchCountry && matchLeague && matchPos && matchValue && matchAge;
+      });
+    }
+
+    function renderPlayerList() {
+      const container = document.getElementById('player-list-container');
+      const filtered = getFilteredPlayers();
+
+      // Update Sidebar Title
+      const titleEl = document.getElementById('selected-country-title');
+      const flagEl = document.getElementById('territory-flag');
+      const subtitleEl = document.getElementById('territory-subtitle');
+      const counterEl = document.getElementById('results-counter');
+
+      counterEl.innerText = `${filtered.length} Jugadores`;
+
+      if (state.selectedCountry === 'ALL') {
+        titleEl.innerText = 'Talentos Globales';
+        flagEl.innerText = '🌐';
+        subtitleEl.innerText = 'Mostrando prospectos en todos los territorios';
+      } else {
+        const hub = COUNTRY_HUBS[state.selectedCountry];
+        titleEl.innerText = state.selectedCountry;
+        flagEl.innerText = hub ? hub.flag : '📍';
+        subtitleEl.innerText = `Jugadores scoutheados en ${state.selectedCountry}`;
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-slate-500 space-y-2">
+            <i class="fa-solid fa-filter-circle-xmark text-2xl text-slate-600"></i>
+            <p class="text-xs">No hay jugadores para esta combinación de filtros.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(player => `
+        <div onclick="openPlayerModal(${player.id})" class="glass-card p-3 rounded-xl hover:border-cyan-500/60 hover:bg-slate-800/80 cursor-pointer transition-all duration-200 flex items-center justify-between group">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-cyan-400 group-hover:border-cyan-400 transition-colors">
+              ${player.name.split(' ').map(n=>n[0]).join('')}
+            </div>
+            <div>
+              <div class="flex items-center space-x-1.5">
+                <h4 class="font-bold text-slate-200 text-xs group-hover:text-cyan-300 transition-colors">${player.name}</h4>
+                <span class="text-xs">${COUNTRY_HUBS[player.country]?.flag || ''}</span>
+              </div>
+              <p class="text-[10px] text-slate-400">${player.team} • <span class="text-amber-400 font-semibold">${player.pos}</span> (${player.age}a)</p>
+            </div>
+          </div>
+
+          <div class="text-right">
+            <div class="text-xs font-extrabold text-emerald-400">€ ${(player.value / 1000000).toFixed(0)}M</div>
+            <div class="text-[9px] text-slate-400">ROI: € ${(player.costImpact / 1000000).toFixed(1)}M</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCountryChips() {
+      const container = document.getElementById('country-chips-container');
+      const countries = Object.keys(COUNTRY_HUBS);
+
+      container.innerHTML = `
+        <button onclick="selectCountry('ALL')" class="px-2 py-1 rounded-md text-[10px] font-semibold transition-all ${state.selectedCountry === 'ALL' ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+          🌐 Todos
+        </button>
+      ` + countries.map(c => {
+        const isSelected = (state.selectedCountry === c);
+        const flag = COUNTRY_HUBS[c].flag;
+        return `
+          <button onclick="selectCountry('${c}')" class="px-2 py-1 rounded-md text-[10px] font-semibold transition-all ${isSelected ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+            ${flag} ${c}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // 4. PLAYER MODAL / EXECUTIVE DRAWER
+    // ==========================================
+
+    window.openPlayerModal = function(playerId) {
+      const player = PLAYERS_DATABASE.find(p => p.id === playerId);
+      if (!player) return;
+
+      document.getElementById('modal-player-avatar').innerText = player.name.split(' ').map(n=>n[0]).join('');
+      document.getElementById('modal-player-name').innerText = player.name;
+      document.getElementById('modal-player-flag').innerText = COUNTRY_HUBS[player.country]?.flag || '🌐';
+      document.getElementById('modal-player-meta').innerText = `${player.team} • Posición: ${player.pos} • ${player.age} años`;
+      
+      document.getElementById('modal-market-value').innerText = `€ ${(player.value / 1000000).toFixed(1)}M`;
+      document.getElementById('modal-cost-impact').innerText = `€ ${(player.costImpact / 1000000).toFixed(1)}M`;
+      document.getElementById('modal-minutes').innerText = `${player.minutes} min`;
+
+      // Stats
+      document.getElementById('modal-val-pases').innerText = player.pasesProg;
+      document.getElementById('modal-bar-pases').style.width = `${Math.min(player.pasesProg * 10, 100)}%`;
+
+      document.getElementById('modal-val-acciones').innerText = player.accionesTiro;
+      document.getElementById('modal-bar-acciones').style.width = `${Math.min(player.accionesTiro * 16, 100)}%`;
+
+      document.getElementById('modal-val-conducciones').innerText = player.conducciones;
+      document.getElementById('modal-bar-conducciones').style.width = `${Math.min(player.conducciones * 18, 100)}%`;
+
+      document.getElementById('modal-val-xg').innerText = player.xg;
+      document.getElementById('modal-bar-xg').style.width = `${Math.min(player.xg * 140, 100)}%`;
+
+      document.getElementById('modal-verdict-text').innerText = 
+        `Su índice de Costo por Impacto (€ ${(player.costImpact / 1000000).toFixed(1)}M) lo convierte en un objetivo prioritario para el mercado de 2026. Muestra alta eficiencia en conducciones progresivas (${player.conducciones} p90) y creación de peligro directo.`;
+
+      document.getElementById('player-modal').classList.remove('hidden');
+    };
+
+    function closeModal() {
+      document.getElementById('player-modal').classList.add('hidden');
+    }
+
+    function showToast(title, desc) {
+      const toast = document.getElementById('toast-message');
+      document.getElementById('toast-title').innerText = title;
+      document.getElementById('toast-desc').innerText = desc;
+
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3500);
+    }
+
+    // ==========================================
+    // 5. EVENT LISTENERS SETUP
+    // ==========================================
+
+    function setupEventListeners() {
+      // League Filter
+      document.getElementById('filter-league').addEventListener('change', (e) => {
+        state.selectedLeague = e.target.value;
+        updateGlobeVisuals();
+        renderPlayerList();
+      });
+
+      // Position Filter
+      document.getElementById('filter-position').addEventListener('change', (e) => {
+        state.selectedPosition = e.target.value;
+        updateGlobeVisuals();
+        renderPlayerList();
+      });
+
+      // Market Value Slider
+      const valSlider = document.getElementById('filter-value');
+      valSlider.addEventListener('input', (e) => {
+        state.maxValue = parseInt(e.target.value);
+        document.getElementById('value-slider-label').innerText = `€ ${(state.maxValue / 1000000).toFixed(0)}M`;
+        updateGlobeVisuals();
+        renderPlayerList();
+      });
+
+      // Age Slider
+      const ageSlider = document.getElementById('filter-age');
+      ageSlider.addEventListener('input', (e) => {
+        state.maxAge = parseInt(e.target.value);
+        document.getElementById('age-slider-label').innerText = `${state.maxAge} años`;
+        updateGlobeVisuals();
+        renderPlayerList();
+      });
+
+      // Clear Filters
+      document.getElementById('clear-filters-btn').addEventListener('click', () => {
+        state.selectedCountry = 'ALL';
+        state.selectedLeague = 'Premier League';
+        state.selectedPosition = 'ALL';
+        state.maxValue = 125000000;
+        state.maxAge = 35;
+
+        document.getElementById('filter-league').value = 'Premier League';
+        document.getElementById('filter-position').value = 'ALL';
+        valSlider.value = 125000000;
+        document.getElementById('value-slider-label').innerText = '€ 125M';
+        ageSlider.value = 35;
+        document.getElementById('age-slider-label').innerText = '35 años';
+
+        updateGlobeVisuals();
+        renderPlayerList();
+        renderCountryChips();
+      });
+
+      // Reset Globe Rotation / Camera
+      document.getElementById('reset-globe-btn').addEventListener('click', () => {
+        camera.position.set(0, 0, 240);
+        controls.reset();
+      });
+
+      // Toggle Auto Rotation
+      document.getElementById('toggle-rotation-btn').addEventListener('click', function() {
+        state.autoRotate = !state.autoRotate;
+        controls.autoRotate = state.autoRotate;
+        this.innerHTML = state.autoRotate 
+          ? '<i class="fa-solid fa-pause mr-1"></i> Pausar' 
+          : '<i class="fa-solid fa-play mr-1"></i> Rotar';
+      });
+
+      // Sync Looker Studio Export Button
+      document.getElementById('sync-looker-btn').addEventListener('click', () => {
+        showToast(
+          'Sincronización con Looker Studio',
+          `Filtro actual (${state.selectedCountry} | ${state.selectedLeague}) enviado exitosamente a la base de Google Sheets.`
+        );
+      });
+
+      document.getElementById('send-single-looker-btn').addEventListener('click', () => {
+        closeModal();
+        showToast(
+          'Ficha Exportada',
+          'Jugador seleccionado enviado como objetivo prioritario a la hoja de Google Sheets.'
+        );
+      });
+
+      // Modal Close button
+      document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+    }
+
+    // ==========================================
+    // 6. INITIALIZATION ON WINDOW LOAD
+    // ==========================================
+    window.onload = function() {
+      init3DGlobe();
+      setupEventListeners();
+      renderCountryChips();
+      renderPlayerList();
+    };
+  </script>
+</body>
+</html>
